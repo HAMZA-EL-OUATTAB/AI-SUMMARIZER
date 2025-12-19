@@ -139,12 +139,3 @@ Make sure you have the following installed before running the project:
 ✨ Happy coding!
 
 ```
-
-If you want, I can also:
-- Add **GitHub badges**
-- Create a **Docker-based README**
-- Write a **production deployment section**
-- Simplify it for **school submission**
-
-Just tell me 👍
-```
