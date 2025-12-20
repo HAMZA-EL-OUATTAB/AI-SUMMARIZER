@@ -1,0 +1,13 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# AI / ML
+*.pt
+*.pth
+*.onnx
+
+# FastAPI
+.db
