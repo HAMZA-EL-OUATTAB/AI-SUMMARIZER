@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
 
-from app.api.v1 import chats, files
+from app.api.v1 import chats, files , sessions
 from app.api.auth.routes import router as auth_router
 
 # Create tables
@@ -31,6 +31,8 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api")      # ✅ /api/auth/*
 app.include_router(chats.router, prefix="/api/v1")  # /api/v1/...
 app.include_router(files.router, prefix="/api/v1")  # /api/v1/...
+app.include_router(sessions.router, prefix="/api/v1")  # /api/v1/...
+
 
 @app.get("/")
 def root():

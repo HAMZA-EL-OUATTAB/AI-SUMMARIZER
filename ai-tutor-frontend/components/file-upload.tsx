@@ -39,77 +39,84 @@ export function FileUpload({ sessionId }: FileUploadProps) {
     return "📎"
   }
 
-  const uploadFiles = async (filesToUpload: File[]) => {
-    const newFiles: UploadedFile[] = filesToUpload.map((file) => ({
-      id: `temp-${Date.now()}-${Math.random()}`,
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      status: "uploading" as const,
-      progress: 0,
-    }))
+const uploadFiles = (filesToUpload: File[]) => {
+  const newFiles: UploadedFile[] = filesToUpload.map((file) => ({
+    id: `temp-${Date.now()}-${Math.random()}`,
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    status: "uploading" as const,
+    progress: 0,
+  }))
+  setFiles((prev) => [...prev, ...newFiles])
 
-    setFiles((prev) => [...prev, ...newFiles])
+  const formData = new FormData()
+  filesToUpload.forEach((file) => formData.append("files", file))
 
-    const formData = new FormData()
-    filesToUpload.forEach((file) => {
-      formData.append("files", file)
-    })
+  filesToUpload.forEach((file, index) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open("POST", `/api/v1/files/upload/${sessionId}`)
 
-    try {
-      // Simulate progress
-      const progressInterval = setInterval(() => {
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percent = Math.round((event.loaded / event.total) * 100)
         setFiles((prev) =>
           prev.map((f) =>
-            newFiles.some((nf) => nf.id === f.id) && f.progress < 90 ? { ...f, progress: f.progress + 10 } : f,
-          ),
+            f.id === newFiles[index].id ? { ...f, progress: percent } : f
+          )
         )
-      }, 200)
-
-      const response = await fetch(`/api/v1/files/upload/${sessionId}`, {
-        method: "POST",
-        body: formData,
-      })
-
-      clearInterval(progressInterval)
-
-      if (!response.ok) {
-        throw new Error("Upload failed")
       }
+    }
 
-      const data = await response.json()
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const data = JSON.parse(xhr.responseText)
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === newFiles[index].id
+              ? { ...f, id: data.id || f.id, status: "success", progress: 100 }
+              : f
+          )
+        )
+        toast({
+          title: "Upload successful",
+          description: `${file.name} uploaded successfully.`,
+        })
+      } else {
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === newFiles[index].id
+              ? { ...f, status: "error", progress: 0 }
+              : f
+          )
+        )
+        toast({
+          title: "Upload failed",
+          description: `${file.name} failed to upload.`,
+          variant: "destructive",
+        })
+      }
+    }
 
+    xhr.onerror = () => {
       setFiles((prev) =>
-        prev.map((f) => {
-          const uploadedFile = data.files.find((uf: any) => uf.name === f.name)
-          if (uploadedFile) {
-            return {
-              ...f,
-              id: uploadedFile.id,
-              status: "success" as const,
-              progress: 100,
-            }
-          }
-          return f
-        }),
+        prev.map((f) =>
+          f.id === newFiles[index].id
+            ? { ...f, status: "error", progress: 0 }
+            : f
+        )
       )
-
-      toast({
-        title: "Upload successful",
-        description: data.message,
-      })
-    } catch (error) {
-      setFiles((prev) =>
-        prev.map((f) => (newFiles.some((nf) => nf.id === f.id) ? { ...f, status: "error" as const, progress: 0 } : f)),
-      )
-
       toast({
         title: "Upload failed",
-        description: "Failed to upload files. Please try again.",
+        description: `${file.name} failed to upload.`,
         variant: "destructive",
       })
     }
-  }
+
+    xhr.send(formData)
+  })
+}
+
 
   const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()

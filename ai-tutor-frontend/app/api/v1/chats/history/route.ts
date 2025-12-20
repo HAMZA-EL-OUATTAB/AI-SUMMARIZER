@@ -1,19 +1,45 @@
 import { NextResponse } from "next/server"
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const userId = searchParams.get("user_id")
+
+  if (!userId) {
+    return NextResponse.json({ error: "user_id is required" }, { status: 400 })
+  }
+
   try {
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 800))
+    const backendUrl = `${process.env.BACKEND_API_URL}/api/v1/sessions?user_id=${userId}`
+    console.log("Fetching from backend:", backendUrl)
+    
+    const res = await fetch(backendUrl, { cache: "no-store" })
 
-    // TODO: Fetch chat history from your backend database
-    // Example: const response = await fetch(`${process.env.BACKEND_API_URL}/chats/history`)
-    // const data = await response.json()
+    if (!res.ok) {
+      const errorText = await res.text()
+      console.error(`Backend error (${res.status}):`, errorText)
+      return NextResponse.json({ 
+        error: `Failed to fetch sessions: ${res.status}`,
+        details: errorText 
+      }, { status: 500 })
+    }
 
+    const data = await res.json()
+    
+    // Transform backend response to match frontend expectations
     return NextResponse.json({
       success: true,
-      chats: [],
+      chats: Array.isArray(data) ? data.map((chat: any) => ({
+        session_id: chat.id,
+        title: chat.title,
+        created_at: chat.created_at,
+        updated_at: chat.created_at,
+      })) : []
     })
   } catch (error) {
-    return NextResponse.json({ success: false, error: "Failed to fetch chat history" }, { status: 500 })
+    console.error("Error fetching chat history:", error)
+    return NextResponse.json({ 
+      error: "Failed to fetch sessions",
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 })
   }
 }

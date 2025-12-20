@@ -16,8 +16,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Upload files to your backend storage service
     const backendFormData = new FormData()
-    files.forEach((file) => backendFormData.append("files", file))
-    const response = await fetch(`${process.env.BACKEND_API_URL}/files/upload/${session_id}`, {
+    files.forEach((file) => backendFormData.append("file", file))
+    const response = await fetch(`${process.env.BACKEND_API_URL}/api/v1/files/upload/${session_id}`, {
       method: "POST",
       body: backendFormData,
     })

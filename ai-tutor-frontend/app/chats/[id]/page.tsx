@@ -1,5 +1,7 @@
 import { ChatHeader } from "@/components/chat-header"
 import { ChatContainer } from "@/components/chat-container"
+import { Sidebar } from "@/components/sidebar"
+import { AppLayout } from "@/components/app-layout"
 
 interface ChatPageProps {
   params: Promise<{ id: string }>
@@ -7,8 +9,7 @@ interface ChatPageProps {
 
 async function getMessages(sessionId: string) {
   try {
-    // In production, this would be an actual API call
-    // For now, we'll use the local API route
+    // Call the Next.js API route (which proxies to FastAPI backend)
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
     const res = await fetch(`${baseUrl}/api/v1/chats/${sessionId}/messages`, {
       cache: "no-store",
@@ -21,7 +22,7 @@ async function getMessages(sessionId: string) {
     const data = await res.json()
     return data.messages || []
   } catch (error) {
-    console.error("[v0] Error fetching messages:", error)
+    console.error("Error fetching messages:", error)
     return []
   }
 }
@@ -32,8 +33,13 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
   return (
     <div className="flex h-full flex-col">
+      <AppLayout>
+
       <ChatHeader title={`Chat Session`} />
       <ChatContainer sessionId={id} initialMessages={initialMessages} />
+
+      </AppLayout>
+
     </div>
   )
 }

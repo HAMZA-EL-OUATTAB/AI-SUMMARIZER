@@ -65,7 +65,7 @@ export function ChatInput({ sessionId, onMessagesUpdate, currentMessages }: Chat
       const aiMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: data.message,
+        content: data.ai_message.content,
         timestamp: new Date().toISOString(),
       }
 

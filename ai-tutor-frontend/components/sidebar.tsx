@@ -8,7 +8,7 @@ import { NewChatButton } from "@/components/new-chat-button";
 import { GraduationCap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { ProfileAlert } from "@/components/ProfileAlert"; // <-- import
+import { ProfileAlert } from "@/components/ProfileAlert";
 
 interface Chat {
   session_id: string;
@@ -22,32 +22,27 @@ export function Sidebar() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const userId = 1; // TODO: Get from auth/context
 
   useEffect(() => {
     async function fetchChatHistory() {
       try {
         setIsLoading(true);
-        const response = await fetch("/api/v1/chats/history");
-        const data = await response.json();
+        const res = await fetch(`/api/v1/chats/history?user_id=${userId}`, { cache: "no-store" });
+        const data = await res.json();
 
         if (data.success) {
           setChats(data.chats);
         } else {
-          const errorMsg = data.error || "Failed to load chats";
-          setError(errorMsg);
-          toast({
-            title: "Error loading chats",
-            description: errorMsg,
-            variant: "destructive",
-          });
+          throw new Error(data.error || "Failed to load chats");
         }
       } catch (err) {
-        const errorMsg = "Failed to load chats";
-        setError(errorMsg);
-        console.error("[v0] Error fetching chat history:", err);
+        const msg = err instanceof Error ? err.message : "Failed to load chats";
+        setError(msg);
+        console.error("Chat history fetch error:", msg);
         toast({
           title: "Error loading chats",
-          description: errorMsg,
+          description: msg,
           variant: "destructive",
         });
       } finally {
@@ -56,36 +51,37 @@ export function Sidebar() {
     }
 
     fetchChatHistory();
-  }, [toast]);
+  }, [toast, userId]);
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-border bg-card">
-      {/* Logo/Header */}
-      <div className="flex items-center gap-2 border-b border-border p-4">
+    <aside className="flex h-screen w-64 flex-col border-r border-border bg-card overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 border-b border-border p-4 shrink-0">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
           <GraduationCap className="h-6 w-6 text-primary-foreground" />
         </div>
-        <h1 className="text-xl font-semibold text-foreground">AI Tutor</h1>
+        <h1 className="text-xl font-semibold">AI Tutor</h1>
       </div>
 
-      {/* New Chat Button */}
-      <div className="p-4">
+      {/* New Chat */}
+      <div className="p-4 shrink-0">
         <NewChatButton />
       </div>
 
-      {/* Chat List */}
-      <ScrollArea className="flex-1 px-3">
-        <div className="pb-4">
-          {isLoading && <ChatListSkeleton />}
-          {!isLoading && !error && chats.length === 0 && <ChatListEmpty />}
-          {!isLoading && error && (
-            <div className="px-4 py-8 text-center">
-              <p className="text-sm text-destructive">{error}</p>
-            </div>
-          )}
-          {!isLoading && !error && chats.length > 0 && (
-            <div className="space-y-2">
-              {chats.map((chat) => (
+      {/* Scrollable Chat List */}
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full px-3">
+          <div className="pb-4 space-y-2">
+            {isLoading && <ChatListSkeleton />}
+            {!isLoading && !error && chats.length === 0 && <ChatListEmpty />}
+            {!isLoading && error && (
+              <p className="px-4 py-8 text-center text-sm text-destructive">
+                {error}
+              </p>
+            )}
+            {!isLoading &&
+              !error &&
+              chats.map((chat) => (
                 <ChatListItem
                   key={chat.session_id}
                   id={chat.session_id}
@@ -93,13 +89,12 @@ export function Sidebar() {
                   date={chat.created_at}
                 />
               ))}
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+          </div>
+        </ScrollArea>
+      </div>
 
-      {/* Profile section fixed at bottom */}
-      <div className="p-4 border-t border-border mt-auto">
+      {/* Profile */}
+      <div className="border-t border-border p-4 shrink-0">
         <ProfileAlert />
       </div>
     </aside>

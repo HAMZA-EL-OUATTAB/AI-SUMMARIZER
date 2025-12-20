@@ -5,7 +5,6 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { user_id, title } = body
 
-    // Validate input
     if (!title || typeof title !== "string" || !title.trim()) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 })
     }
@@ -14,20 +13,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 })
     }
 
-    // TODO: Create chat session in your backend database
-    // Example:
-    // const response = await fetch(`${process.env.BACKEND_API_URL}/chats`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ user_id, title })
-    // })
-    // const data = await response.json()
+    // Call FastAPI backend to create chat
+    const backendResponse = await fetch(`${process.env.BACKEND_API_URL}/api/v1/chats/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id, title }),
+    })
+
+    if (!backendResponse.ok) {
+      const errorText = await backendResponse.text()
+      console.error("Backend error:", errorText)
+      return NextResponse.json({ error: "Failed to create chat session" }, { status: 500 })
+    }
+
+    const data = await backendResponse.json() // parse JSON
 
     return NextResponse.json({
-      session_id: "backend-integration-required",
-      title,
+      session_id: data.id, // numeric session ID
+      title: data.title,
       user_id,
-      created_at: new Date().toISOString(),
+      created_at: data.created_at,
     })
   } catch (error) {
     console.error("Error creating chat:", error)
