@@ -22,24 +22,31 @@ export function Sidebar() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const userId = 1; // TODO: Get from auth/context
 
   useEffect(() => {
     async function fetchChatHistory() {
       try {
-        setIsLoading(true);
-        const res = await fetch(`/api/v1/chats/history?user_id=${userId}`, { cache: "no-store" });
-        const data = await res.json();
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("User not authenticated");
 
-        if (data.success) {
-          setChats(data.chats);
-        } else {
-          throw new Error(data.error || "Failed to load chats");
+        setIsLoading(true);
+
+        const res = await fetch("/api/v1/chats/history", {
+          cache: "no-store",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to load chats");
         }
+
+        const data = await res.json();
+        setChats(data.chats || []);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Failed to load chats";
         setError(msg);
-        console.error("Chat history fetch error:", msg);
         toast({
           title: "Error loading chats",
           description: msg,
@@ -51,11 +58,10 @@ export function Sidebar() {
     }
 
     fetchChatHistory();
-  }, [toast, userId]);
+  }, [toast]);
 
   return (
     <aside className="flex h-screen w-64 flex-col border-r border-border bg-card overflow-hidden">
-      {/* Header */}
       <div className="flex items-center gap-2 border-b border-border p-4 shrink-0">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
           <GraduationCap className="h-6 w-6 text-primary-foreground" />
@@ -63,12 +69,10 @@ export function Sidebar() {
         <h1 className="text-xl font-semibold">AI Tutor</h1>
       </div>
 
-      {/* New Chat */}
       <div className="p-4 shrink-0">
         <NewChatButton />
       </div>
 
-      {/* Scrollable Chat List */}
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full px-3">
           <div className="pb-4 space-y-2">
@@ -93,7 +97,6 @@ export function Sidebar() {
         </ScrollArea>
       </div>
 
-      {/* Profile */}
       <div className="border-t border-border p-4 shrink-0">
         <ProfileAlert />
       </div>

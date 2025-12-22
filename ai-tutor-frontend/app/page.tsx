@@ -1,7 +1,42 @@
-import { AppLayout } from "@/components/app-layout"
-import { MobileSidebarToggle } from "@/components/mobile-sidebar-toggle"
+"use client";
+
+import { AppLayout } from "@/components/app-layout";
+import { MobileSidebarToggle } from "@/components/mobile-sidebar-toggle";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { jwtDecode } from "jwt-decode";
+
+interface JwtPayload {
+  exp: number; // expiration timestamp in seconds
+  sub: string; // user id
+}
 
 export default function HomePage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/auth"); // no token, redirect
+      return;
+    }
+
+    try {
+      const decoded = jwtDecode<JwtPayload>(token);
+      const currentTime = Math.floor(Date.now() / 1000); // in seconds
+
+      if (decoded.exp && decoded.exp < currentTime) {
+        // token expired
+        localStorage.removeItem("token");
+        router.push("/auth");
+      }
+    } catch (err) {
+      console.error("Invalid token:", err);
+      localStorage.removeItem("token");
+      router.push("/auth");
+    }
+  }, [router]);
+
   return (
     <AppLayout>
       <div className="flex h-full flex-col">
@@ -22,5 +57,5 @@ export default function HomePage() {
         </div>
       </div>
     </AppLayout>
-  )
+  );
 }

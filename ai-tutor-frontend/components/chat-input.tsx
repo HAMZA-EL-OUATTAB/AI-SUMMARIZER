@@ -25,68 +25,80 @@ export function ChatInput({ sessionId, onMessagesUpdate, currentMessages }: Chat
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const { toast } = useToast()
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return
+const handleSend = async () => {
+  if (!input.trim() || isLoading) return
 
-    const userMessage: Message = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content: input.trim(),
-      timestamp: new Date().toISOString(),
-    }
-
-    setInput("")
-    onMessagesUpdate([...currentMessages, userMessage])
-    setIsLoading(true)
-
-    const loadingMessage: Message = {
-      id: "loading",
-      role: "assistant",
-      content: "...",
-      timestamp: new Date().toISOString(),
-    }
-    onMessagesUpdate([...currentMessages, userMessage, loadingMessage])
-
-    try {
-      const response = await fetch(`/api/v1/chats/${sessionId}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content: userMessage.content }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to send message")
-      }
-
-      const data = await response.json()
-
-      const aiMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: data.ai_message.content,
-        timestamp: new Date().toISOString(),
-      }
-
-      onMessagesUpdate([...currentMessages, userMessage, aiMessage])
-      toast({
-        title: "Message sent",
-        description: "Your question has been sent to the AI Tutor.",
-      })
-    } catch (error) {
-      console.error("[v0] Error sending message:", error)
-      onMessagesUpdate([...currentMessages, userMessage])
-      toast({
-        title: "Failed to send message",
-        description: "Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-      textareaRef.current?.focus()
-    }
+  const token = localStorage.getItem("token")
+  if (!token) {
+    toast({
+      title: "Not authenticated",
+      description: "Please log in first.",
+      variant: "destructive",
+    })
+    return
   }
+
+  const userMessage: Message = {
+    id: `user-${Date.now()}`,
+    role: "user",
+    content: input.trim(),
+    timestamp: new Date().toISOString(),
+  }
+
+  setInput("")
+  onMessagesUpdate([...currentMessages, userMessage])
+  setIsLoading(true)
+
+  const loadingMessage: Message = {
+    id: "loading",
+    role: "assistant",
+    content: "...",
+    timestamp: new Date().toISOString(),
+  }
+  onMessagesUpdate([...currentMessages, userMessage, loadingMessage])
+
+  try {
+    const response = await fetch(`/api/v1/chats/${sessionId}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({ content: userMessage.content }),
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to send message")
+    }
+
+    const data = await response.json()
+
+    const aiMessage: Message = {
+      id: `assistant-${Date.now()}`,
+      role: "assistant",
+      content: data.ai_message.content,
+      timestamp: new Date().toISOString(),
+    }
+
+    onMessagesUpdate([...currentMessages, userMessage, aiMessage])
+    toast({
+      title: "Message sent",
+      description: "Your question has been sent to the AI Tutor.",
+    })
+  } catch (error) {
+    console.error("[v0] Error sending message:", error)
+    onMessagesUpdate([...currentMessages, userMessage])
+    toast({
+      title: "Failed to send message",
+      description: "Please try again.",
+      variant: "destructive",
+    })
+  } finally {
+    setIsLoading(false)
+    textareaRef.current?.focus()
+  }
+}
+
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {

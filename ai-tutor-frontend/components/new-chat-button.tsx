@@ -27,50 +27,50 @@ export function NewChatButton() {
   const router = useRouter()
   const { toast } = useToast()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setError("")
+  setIsLoading(true)
 
-    try {
-      const response = await fetch("/api/v1/chats", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: 1,
-          title: title,
-        }),
-      })
+  try {
+    const token = localStorage.getItem("token")
+    if (!token) throw new Error("User not authenticated")
 
-      if (!response.ok) {
-        throw new Error("Failed to create chat")
-      }
+    const response = await fetch("/api/v1/chats", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ title }),
+    })
 
-      const data = await response.json()
-
-      toast({
-        title: "Chat created",
-        description: `"${title}" has been created successfully.`,
-      })
-
-      setOpen(false)
-      setTitle("")
-
-      router.push(`/chats/${data.session_id}`)
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred"
-      setError(errorMessage)
-      toast({
-        title: "Failed to create chat",
-        description: errorMessage,
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
+    if (!response.ok) {
+      throw new Error("Failed to create chat")
     }
+
+    const data = await response.json()
+
+    toast({
+      title: "Chat created",
+      description: `"${title}" has been created successfully.`,
+    })
+
+    setOpen(false)
+    setTitle("")
+    router.push(`/chats/${data.id}`)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "An error occurred"
+    setError(message)
+    toast({
+      title: "Failed to create chat",
+      description: message,
+      variant: "destructive",
+    })
+  } finally {
+    setIsLoading(false)
   }
+}
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)

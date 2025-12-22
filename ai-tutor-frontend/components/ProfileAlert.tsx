@@ -10,6 +10,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogTrigger,
+  AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 
 import {
@@ -19,11 +20,14 @@ import {
   deleteAccount,
   UserProfile,
 } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export function ProfileAlert() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const router = useRouter();
 
   const token = localStorage.getItem("token") || "";
 
@@ -40,12 +44,17 @@ export function ProfileAlert() {
         setLoading(false);
       }
     }
-
     fetchProfile();
   }, [token]);
 
+  const handleLogout = () => {
+    localStorage.removeItem("token"); // Remove JWT
+    setOpen(false);
+    router.push("/auth"); // Redirect to login page
+  };
+
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
         <Button variant="outline" className="flex items-center gap-2 w-full">
           <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center">
@@ -65,13 +74,23 @@ export function ProfileAlert() {
                 <p><strong>Full Name:</strong> {user.full_name}</p>
                 <p><strong>Username:</strong> {user.username}</p>
                 <p><strong>Email:</strong> {user.email}</p>
-                {/* Here you can add update forms and password change buttons */}
+
+                {/* Logout button */}
+                <Button
+                  variant="destructive"
+                  className="mt-4"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </Button>
               </div>
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <Button>Close</Button>
+          <AlertDialogCancel asChild>
+            <Button variant="outline">Close</Button>
+          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
