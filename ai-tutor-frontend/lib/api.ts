@@ -134,3 +134,20 @@ export async function deleteAccount(token: string) {
 
   return await res.json();
 }
+
+export async function generateMindmap(topic: string, token: string) {
+  const res = await fetch("/api/v1/mindmap", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ topic }),
+  })
+
+  if (!res.ok) {
+    throw new Error("Failed to generate mindmap")
+  }
+
+  return res.json()
+}
